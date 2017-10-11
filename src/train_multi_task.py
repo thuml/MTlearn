@@ -156,7 +156,7 @@ if __name__ == "__main__":
     config["num_iter"] = 100000
     #config["test_interval"] = 1000
     #config["test_iter"] = 500
-    config["whole_test_interval"] = 5000
+    config["whole_test_interval"] = 500
     config["output_dir"] = "pytorch_multi_task"
     os.system("mkdir -p ../snapshot/"+ config["output_dir"])
     config["file_out"] = open("../snapshot/"+ config["output_dir"]+"/train_log.txt", "w")

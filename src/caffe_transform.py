@@ -57,7 +57,7 @@ class ForceFlip(object):
         return img.transpose(Image.FLIP_LEFT_RIGHT)
 
 def transform_train(resize_size=256, crop_size=227):
-  normalize = transforms.Normalize(mean=torch.load('./resnet_mean.dat') / 255,
+  normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                    std=[0.229, 0.224, 0.225])
   return  transforms.Compose([
         ResizeImage(resize_size),
@@ -68,7 +68,7 @@ def transform_train(resize_size=256, crop_size=227):
     ])
 
 def transform_test(data_transforms=None, resize_size=256, crop_size=227):
-  normalize = transforms.Normalize(mean=torch.load('./resnet_mean.dat') / 255,
+  normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                    std=[0.229, 0.224, 0.225])
   #ten crops for image when validation, input the data_transforms dictionary
   start_first = 0
