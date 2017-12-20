@@ -19,23 +19,19 @@ def TensorProduct(tensor1, tensor2, axes=(0, 0)):
     result = torch.matmul(torch.t(TensorUnfold(tensor1, axes[0])), TensorUnfold(tensor2, axes[1]))
     return result.resize_(shape_out)
 
-def UpdateCov(matrix_out, tensor1, tensor2):
-    size_dim0 = matrix_out.size(0)
-    size_dim1 = matrix_out.size(1)
-    size_dim2 = matrix_out.size(2)
-    middle_result = torch.mm(matrix_out.view(-1, size_dim2), tensor2)
-    middle_result1 = torch.mm(middle_result.view(size_dim0, size_dim1, size_dim2).permute(0, 2, 1).contiguous().view(-1, size_dim1), tensor1).view(size_dim0, size_dim2, size_dim1).permute(0, 2, 1).contiguous()
-    final_result = torch.mm(middle_result1.view(size_dim0, -1), torch.t(middle_result1.view(size_dim0, -1)))
-    return torch.inverse(final_result + epsilon * torch.eye(final_result.size(0)).cuda())   
+def UpdateCov(weight_matrix, tensor1, tensor2):
+    size0 = weight_matrix.size(0)
+    final_result = torch.mm(weight_matrix.view(size0, -1), torch.t(torch.matmul(tensor1, torch.matmul(weight_matrix, torch.t(tensor2))).view(size0, -1)))
+    return final_result + epsilon * torch.eye(final_result.size(0)).cuda()
 
 def MultiTaskLoss(weight_matrix, tensor1, tensor2, tensor3):
     size_dim0 = weight_matrix.size(0)
     size_dim1 = weight_matrix.size(1)
     size_dim2 = weight_matrix.size(2)
-    middle_result = torch.mm(tensor3, weight_matrix.permute(2, 0, 1).contiguous().view(size_dim2, -1))
-    middle_result = torch.mm(tensor2, middle_result.view(size_dim2, size_dim0, size_dim1).permute(2, 1, 0).contiguous().view(size_dim1, -1))
-    middle_result = torch.mm(tensor1, middle_result.view(size_dim1, size_dim0, size_dim2).permute(1, 0, 2).contiguous().view(size_dim0, -1)).view(-1, 1)
-    return torch.mm(weight_matrix.view(1, -1), middle_result).view(1)
+    middle_result1 = torch.matmul(weight_matrix, torch.t(tensor3))
+    middle_result2 = torch.matmul(tensor2, middle_result1)
+    final_result = torch.matmul(tensor1, middle_result2.permute(1,0,2)).permute(1,0,2).contiguous()
+    return torch.mm(weight_matrix.view(1, -1), final_result.view(-1, 1)).view(1)
     
 if __name__ == "__main__":
     tensor1 = torch.randn(2,3,4)

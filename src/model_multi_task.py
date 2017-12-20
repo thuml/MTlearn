@@ -5,335 +5,197 @@ from torchvision import models
 import tensor_op
 from torch.autograd import Variable
 import torch.optim as optim
+import numpy as np
 
-# convnet without the last layer
-class AlexnetFc(nn.Module):
-  def __init__(self, output_num):
-    super(AlexnetFc, self).__init__()
-    model_alexnet = models.alexnet(pretrained=True)
-    self.features = model_alexnet.features
-    self.classifier = nn.Sequential()
-    for i in xrange(6):
-      self.classifier.add_module("classifier"+str(i), model_alexnet.classifier[i])
-    self.__in_features = model_alexnet.classifier[6].in_features
-    self.output_num = output_num
-    self.bottleneck = nn.Linear(self.__in_features, 256)
-    self.fc = nn.Linear(256, output_num)
-    self.bottleneck.weight.data.normal_(0, 0.005)
-    self.fc.weight.data.normal_(0, 0.01)
-    self.bottleneck.bias.data.fill_(0.1)
-    self.fc.bias.data.fill_(0.0)
-
+# classification model without the last layer
+class Vgg16NoFc(nn.Module):
+    def __init__(self):
+        super(Vgg16NoFc, self).__init__()
+        model_vgg = models.vgg16(pretrained=True)
+        self.features = model_vgg.features
+        self.classifier = nn.Sequential()
+        for i in xrange(6):
+            self.classifier.add_module("classifier"+str(i), model_vgg.classifier[i])
+        self.extract_feature_layers = nn.Sequential(self.features, self.classifier)
+        self.in_features = model_vgg.classifier[6].in_features
   
-  def forward(self, x):
-    x = self.features(x)
-    x = x.view(x.size(0), 256*6*6)
-    x = self.classifier(x)
-    x = self.bottleneck(x)
-    x = self.fc(x)
-    return x
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
 
-  def output_num(self):
-    return self.output_num
+    def output_num(self):
+        return self.in_features
 
-class Resnet18Fc(nn.Module):
-  def __init__(self, output_num):
-    super(Resnet18Fc, self).__init__()
-    model_resnet18 = models.resnet18(pretrained=True)
-    self.conv1 = model_resnet18.conv1
-    self.bn1 = model_resnet18.bn1
-    self.relu = model_resnet18.relu
-    self.maxpool = model_resnet18.maxpool
-    self.layer1 = model_resnet18.layer1
-    self.layer2 = model_resnet18.layer2
-    self.layer3 = model_resnet18.layer3
-    self.layer4 = model_resnet18.layer4
-    self.avgpool = model_resnet18.avgpool
-    self.__in_features = model_resnet18.fc.in_features
-    self.output_num = output_num
-    self.bottleneck = nn.Linear(self.__in_features, 256)
-    self.fc = nn.Linear(256, output_num)
-    self.bottleneck.weight.data.normal_(0, 0.005)
-    self.fc.weight.data.normal_(0, 0.01)
-    self.bottleneck.bias.data.fill_(0.1)
-    self.fc.bias.data.fill_(0.0)
-
-
-  def forward(self, x):
-    x = self.conv1(x)
-    x = self.bn1(x)
-    x = self.relu(x)
-    x = self.maxpool(x)
-    x = self.layer1(x)
-    x = self.layer2(x)
-    x = self.layer3(x)
-    x = self.layer4(x)
-    x = self.avgpool(x)
-    x = x.view(x.size(0), -1)
-    x = self.bottleneck(x)
-    x = self.fc(x)
-    return x
-
-  def output_num(self):
-    return self.output_num
-
-class Resnet34Fc(nn.Module):
-  def __init__(self, output_num):
-    super(Resnet34Fc, self).__init__()
-    model_resnet34 = models.resnet34(pretrained=True)
-    self.conv1 = model_resnet34.conv1
-    self.bn1 = model_resnet34.bn1
-    self.relu = model_resnet34.relu
-    self.maxpool = model_resnet34.maxpool
-    self.layer1 = model_resnet34.layer1
-    self.layer2 = model_resnet34.layer2
-    self.layer3 = model_resnet34.layer3
-    self.layer4 = model_resnet34.layer4
-    self.avgpool = model_resnet34.avgpool
-    self.__in_features = model_resnet34.fc.in_features
-    self.output_num = output_num
-    self.bottleneck = nn.Linear(self.__in_features, 256)
-    self.fc = nn.Linear(256, output_num)
-    self.bottleneck.weight.data.normal_(0, 0.005)
-    self.fc.weight.data.normal_(0, 0.01)
-    self.bottleneck.bias.data.fill_(0.1)
-    self.fc.bias.data.fill_(0.0)
-
-
-  def forward(self, x):
-    x = self.conv1(x)
-    x = self.bn1(x)
-    x = self.relu(x)
-    x = self.maxpool(x)
-    x = self.layer1(x)
-    x = self.layer2(x)
-    x = self.layer3(x)
-    x = self.layer4(x)
-    x = self.avgpool(x)
-    x = x.view(x.size(0), -1)
-    x = self.bottleneck(x)
-    x = self.fc(x)
-    return x
-
-  def output_num(self):
-    return self.output_num
-
-class Resnet50Fc(nn.Module):
-  def __init__(self, output_num):
-    super(Resnet50Fc, self).__init__()
-    model_resnet50 = models.resnet50(pretrained=True)
-    self.conv1 = model_resnet50.conv1
-    self.bn1 = model_resnet50.bn1
-    self.relu = model_resnet50.relu
-    self.maxpool = model_resnet50.maxpool
-    self.layer1 = model_resnet50.layer1
-    self.layer2 = model_resnet50.layer2
-    self.layer3 = model_resnet50.layer3
-    self.layer4 = model_resnet50.layer4
-    self.avgpool = model_resnet50.avgpool
-    self.__in_features = model_resnet50.fc.in_features
-    self.output_num = output_num
-    self.bottleneck = nn.Linear(self.__in_features, 256)
-    self.fc = nn.Linear(256, output_num)
-    self.bottleneck.weight.data.normal_(0, 0.005)
-    self.fc.weight.data.normal_(0, 0.01)
-    self.bottleneck.bias.data.fill_(0.1)
-    self.fc.bias.data.fill_(0.0)
-
-
-  def forward(self, x):
-    x = self.conv1(x)
-    x = self.bn1(x)
-    x = self.relu(x)
-    x = self.maxpool(x)
-    x = self.layer1(x)
-    x = self.layer2(x)
-    x = self.layer3(x)
-    x = self.layer4(x)
-    x = self.avgpool(x)
-    x = x.view(x.size(0), -1)
-    x = self.bottleneck(x)
-    x = self.fc(x)
-    return x
-
-  def output_num(self):
-    return self.output_num
-
-class Resnet101Fc(nn.Module):
-  def __init__(self, output_num):
-    super(Resnet101Fc, self).__init__()
-    model_resnet101 = models.resnet101(pretrained=True)
-    self.conv1 = model_resnet101.conv1
-    self.bn1 = model_resnet101.bn1
-    self.relu = model_resnet101.relu
-    self.maxpool = model_resnet101.maxpool
-    self.layer1 = model_resnet101.layer1
-    self.layer2 = model_resnet101.layer2
-    self.layer3 = model_resnet101.layer3
-    self.layer4 = model_resnet101.layer4
-    self.avgpool = model_resnet101.avgpool
-    self.extract_feature_layers = nn.Sequential(self.conv1, self.bn1, self.relu, self.maxpool, self.layer1, self.layer2, self.layer3, self.layer4, self.avgpool)
-
-    self.in_features = model_resnet101.fc.in_features
-    self.output_num = output_num
-    self.bottleneck = nn.Linear(self.in_features, 256)
-    self.fc = nn.Linear(256, output_num)
-    self.bottleneck.weight.data.normal_(0, 0.005)
-    self.fc.weight.data.normal_(0, 0.01)
-    self.bottleneck.bias.data.fill_(0.1)
-    self.fc.bias.data.fill_(0.0)
-
-
-  def forward(self, x):
-    x = self.extract_feature_layers(x)
-    x = x.view(x.size(0), -1)
-    x = self.bottleneck(x)
-    x = self.fc(x)
-    return x
-
-  def output_num(self):
-    return self.output_num
-
-
-class Resnet152Fc(nn.Module):
-  def __init__(self, output_num):
-    super(Resnet152Fc, self).__init__()
-    model_resnet152 = models.resnet152(pretrained=True)
-    self.conv1 = model_resnet152.conv1
-    self.bn1 = model_resnet152.bn1
-    self.relu = model_resnet152.relu
-    self.maxpool = model_resnet152.maxpool
-    self.layer1 = model_resnet152.layer1
-    self.layer2 = model_resnet152.layer2
-    self.layer3 = model_resnet152.layer3
-    self.layer4 = model_resnet152.layer4
-    self.avgpool = model_resnet152.avgpool
-    self.__in_features = model_resnet152.fc.in_features
-    self.output_num = output_num
-    self.bottleneck = nn.Linear(self.__in_features, 256)
-    self.fc = nn.Linear(256, output_num)
-    self.bottleneck.weight.data.normal_(0, 0.005)
-    self.fc.weight.data.normal_(0, 0.01)
-    self.bottleneck.bias.data.fill_(0.1)
-    self.fc.bias.data.fill_(0.0)
-
-
-  def forward(self, x):
-    x = self.conv1(x)
-    x = self.bn1(x)
-    x = self.relu(x)
-    x = self.maxpool(x)
-    x = self.layer1(x)
-    x = self.layer2(x)
-    x = self.layer3(x)
-    x = self.layer4(x)
-    x = self.avgpool(x)
-    x = x.view(x.size(0), -1)
-    x = self.bottleneck(x)
-    x = self.fc(x)
-
-    return x
-
-  def output_num(self):
-    return self.output_num
-
-
-network_dict = {"resnet101":Resnet101Fc}
+network_dict = {"vgg16no_fc": Vgg16NoFc}
 
 class HomoMultiTaskModel(object):
-    def __init__(self, num_tasks, network_list, output_num, gpus, optim_param={"init_lr":0.0003, "gamma":0.001, "power":0.75}, cov_fc7=True):
+    # num_tasks: number of tasks
+    # network_name: the base model used, add new network name in the above 'network_dict'
+    # output_num: the output dimension of all the tasks
+    # gpus: gpu id used (list)
+    # file_out: log file
+    # trade_off: the trade_off between multitask loss and task loss
+    # optim_param: optimizer parameters
+    def __init__(self, num_tasks, network_name, output_num, gpus, file_out, trade_off=1.0, optim_param={"init_lr":0.00003, "gamma":0.3, "power":0.75, "stepsize":3000}):
+        def select_func(x):
+            if x > 0.1:
+                return 1. / x
+            else:
+                return x
+
+        self.file_out = file_out
+        # threshold function in filtering too small singular value 
+        self.select_func = select_func
+
+        self.trade_off = trade_off
         self.train_cross_loss = 0
         self.train_multi_task_loss = 0
         self.train_total_loss = 0
         self.print_interval = 500
 
+        # covariance update frequency (one every #param iter)
+        self.cov_update_freq = 100
+
+        # construct multitask model with shared part and related part
         self.num_tasks = num_tasks
-        self.network_list = network_list
-        self.output_num = output_num
-        self.bottleneck_size = 256
+        self.network_name = network_name
+        self.output_num = output_num       
         self.num_gpus = len(gpus)
-        self.networks = [network_dict[self.network_list[i]](self.output_num).cuda() for i in xrange(num_tasks)]
+        self.shared_layers = network_dict[self.network_name]().cuda() # layers shared
+        self.networks = [[nn.Linear(self.shared_layers.output_num(), self.output_num).cuda()] for i in xrange(self.num_tasks)] # layers not shared but related
+        for i in xrange(self.num_tasks):
+            for layer in self.networks[i]:
+                layer.weight.data.normal_(0, 0.01)
+                layer.bias.data.fill_(0.0)
+        self.networks = [nn.Sequential(*val) for val in self.networks]
+
+        self.bottleneck_size = self.networks[0][-1].in_features
+
+        self.shared_layers = nn.DataParallel(self.shared_layers, device_ids=gpus)
         self.networks = [nn.DataParallel(network, device_ids=gpus) for network in self.networks]
-        parameter_dict = [{"params":self.networks[i].module.extract_feature_layers.parameters(), "lr":1} for i in xrange(self.num_tasks)]
-        parameter_dict += [{"params":self.networks[i].module.bottleneck.parameters(), "lr":10} for i in xrange(self.num_tasks)]
-        parameter_dict += [{"params":self.networks[i].module.fc.parameters(), "lr":10} for i in xrange(self.num_tasks)]
+
+        # construct optimizer
+        parameter_dict = [{"params":self.shared_layers.module.parameters(), "lr":0}]
+        parameter_dict += [{"params":self.networks[i].module.parameters(), "lr":10} for i in xrange(self.num_tasks)]
         self.optimizer = optim.SGD(parameter_dict, lr=1, momentum=0.9, weight_decay=0.0005)
         self.parameter_lr_dict = []
         for param_group in self.optimizer.param_groups:
             self.parameter_lr_dict.append(param_group["lr"])
-        self.optim_param = {"init_lr":0.0003, "gamma":0.001, "power":0.75}
+        self.optim_param = {"init_lr":0.00003, "gamma":0.3, "power":0.75, "stepsize":3000}
         for val in optim_param:
             self.optim_param[val] = optim_param[val]
 
-        self.task_cov_fc8 = torch.eye(num_tasks)
-        self.class_cov_fc8 = torch.eye(output_num)
-        self.feature_cov_fc8 = torch.eye(self.bottleneck_size)
-        self.task_cov_fc8_v = Variable(self.task_cov_fc8).cuda()
-        self.class_cov_fc8_v = Variable(self.class_cov_fc8).cuda()
-        self.feature_cov_fc8_v = Variable(self.feature_cov_fc8).cuda()
-        if cov_fc7:
-            self.task_cov_fc7 = torch.eye(num_tasks)
-            self.class_cov_fc7 = torch.eye(self.networks.bottleneck_size)
-            self.feature_cov_fc7 = torch.eye(self.in_features)
-            self.task_cov_fc7_v = Variable(self.task_cov_fc7).cuda()
-            self.class_cov_fc7_v = Variable(self.class_cov_fc7).cuda()
-            self.feature_cov_fc7_v = Variable(self.feature_cov_fc7).cuda()
+        if self.trade_off > 0:
+            # initialize covariance matrix
+            self.task_cov = torch.eye(num_tasks)
+            self.class_cov = torch.eye(output_num)
+            self.feature_cov = torch.eye(self.bottleneck_size)
+
+            self.task_cov_var = Variable(self.task_cov).cuda()
+            self.class_cov_var = Variable(self.class_cov).cuda()
+            self.feature_cov_var = Variable(self.feature_cov).cuda()
+
         self.criterion = nn.CrossEntropyLoss()
         self.iter_num = 1
        
 
     def optimize_model(self, input_list, label_list):
         # update learning rate
-        current_lr = self.optim_param["init_lr"] * ((1 + self.optim_param["gamma"] * self.iter_num) ** self.optim_param["power"])
+        current_lr = self.optim_param["init_lr"] * (self.optim_param["gamma"] ** (self.iter_num // self.optim_param["stepsize"]))
         i = 0
         for param_group in self.optimizer.param_groups:
             param_group["lr"] = current_lr * self.parameter_lr_dict[i]
             i += 1
 
-        # losses 
+        # classification loss
         for i in xrange(self.num_tasks):
             self.networks[i].train(True)
+        self.shared_layers.train(True)
+        batch_size = input_list[0].size(0)
+
         self.optimizer.zero_grad()
-        output_list = [self.networks[i](input_list[i]) for i in xrange(self.num_tasks)]
+        concat_input = torch.cat(input_list, dim=0)
+        feature_out = self.shared_layers(concat_input)
+        output_list = [self.networks[i](feature_out.narrow(0, i*batch_size, batch_size)) for i in xrange(self.num_tasks)]
         losses = [self.criterion(output_list[i], label_list[i]) for i in xrange(self.num_tasks)]
         classifier_loss = sum(losses)
-        weight_size = self.networks[0].module.fc.weight.size()
-        all_weights = [self.networks[i].module.fc.weight.view(1, weight_size[0], weight_size[1]) for i in xrange(self.num_tasks)]
-        weights_fc8 = torch.cat(all_weights, dim=0).contiguous() 
-        weight_size = self.networks[0].module.bottleneck.weight.size()
-        all_weights = [self.networks[i].module.bottleneck.weight.view(1, weight_size[0], weight_size[1]) for i in xrange(self.num_tasks)]
-        weights_fc7 = torch.cat(all_weights, dim=0).contiguous() 
-        multi_task_loss = tensor_op.MultiTaskLoss(weights_fc8, self.task_cov_fc8_v, self.class_cov_fc8_v, self.feature_cov_fc8_v)
-        total_loss = classifier_loss + multi_task_loss
+
+        # multitask loss
+        if self.trade_off > 0:                   
+            weight_size = self.networks[0].module[-1].weight.size()
+            all_weights = [self.networks[i].module[-1].weight.view(1, weight_size[0], weight_size[1]) for i in xrange(self.num_tasks)]
+            weights = torch.cat(all_weights, dim=0).contiguous()    
+   
+            multi_task_loss = tensor_op.MultiTaskLoss(weights, self.task_cov_var, self.class_cov_var, self.feature_cov_var)
+            total_loss = classifier_loss + self.trade_off * multi_task_loss
+            self.train_cross_loss += classifier_loss.data[0]
+            self.train_multi_task_loss += multi_task_loss.data[0]
+        else:
+            total_loss = classifier_loss
+            self.train_cross_loss += classifier_loss.data[0]
         # update network parameters
         total_loss.backward()
         self.optimizer.step()
 
-        # get updated weights
-        weight_size = self.networks[0].module.fc.weight.size()
-        all_weights = [self.networks[i].module.fc.weight.view(1, weight_size[0], weight_size[1]) for i in xrange(self.num_tasks)]
-        weights_fc8 = torch.cat(all_weights, dim=0).contiguous() 
-        weight_size = self.networks[0].module.bottleneck.weight.size()
-        all_weights = [self.networks[i].module.bottleneck.weight.view(1, weight_size[0], weight_size[1]) for i in xrange(self.num_tasks)]
-        weights_fc7 = torch.cat(all_weights, dim=0).contiguous() 
+        if self.trade_off > 0 and self.iter_num % self.cov_update_freq == 0:
+            # get updated weights
+            weight_size = self.networks[0].module[-1].weight.size()
+            all_weights = [self.networks[i].module[-1].weight.view(1, weight_size[0], weight_size[1]) for i in xrange(self.num_tasks)]
+            weights = torch.cat(all_weights, dim=0).contiguous() 
 
-        # update cov parameters
-        temp_task_cov_fc8_v = tensor_op.UpdateCov(weights_fc8.data, self.class_cov_fc8_v.data, self.feature_cov_fc8_v.data)
-        temp_class_cov_fc8_v = tensor_op.UpdateCov(weights_fc8.data.permute(1, 0, 2).contiguous(), self.task_cov_fc8_v.data, self.feature_cov_fc8_v.data)
-        temp_feature_cov_fc8_v = tensor_op.UpdateCov(weights_fc8.data.permute(2, 0, 1).contiguous(), self.task_cov_fc8_v.data, self.class_cov_fc8_v.data)
-        self.task_cov_fc8_v = Variable(temp_task_cov_fc8_v / torch.trace(temp_task_cov_fc8_v)).cuda()
-        self.class_cov_fc8_v = Variable(temp_class_cov_fc8_v / torch.trace(temp_class_cov_fc8_v)).cuda()
-        self.feature_cov_fc8_v = Variable(temp_feature_cov_fc8_v / torch.trace(temp_feature_cov_fc8_v)).cuda()
+            # update cov parameters
+            temp_task_cov_var = tensor_op.UpdateCov(weights.data, self.class_cov_var.data, self.feature_cov_var.data)
 
+            
+            #temp_class_cov_var = tensor_op.UpdateCov(weights.data.permute(1, 0, 2).contiguous(), self.task_cov_var.data, self.feature_cov_var.data)
+            #temp_feature_cov_var = tensor_op.UpdateCov(weights.data.permute(2, 0, 1).contiguous(), self.task_cov_var.data, self.class_cov_var.data)
+
+            
+            # task covariance
+            u, s, v = torch.svd(temp_task_cov_var)
+            s = s.cpu().apply_(self.select_func).cuda()
+            self.task_cov_var = torch.mm(u, torch.mm(torch.diag(s), torch.t(v)))
+            this_trace = torch.trace(self.task_cov_var)
+            if this_trace > 3000.0:        
+                self.task_cov_var = Variable(self.task_cov_var / this_trace * 3000.0).cuda()
+            else:
+                self.task_cov_var = Variable(self.task_cov_var).cuda()
+            # uncomment to use the other two covariance
+            '''
+            # class covariance
+            u, s, v = torch.svd(temp_class_cov_var)
+            s = s.cpu().apply_(self.select_func).cuda()
+            self.class_cov_var = torch.mm(u, torch.mm(torch.diag(s), torch.t(v)))
+            this_trace = torch.trace(self.class_cov_var)
+            if this_trace > 3000.0:        
+                self.class_cov_var = Variable(self.class_cov_var / this_trace * 3000.0).cuda()
+            else:
+                self.class_cov_var = Variable(self.class_cov_var).cuda()
+            # feature covariance
+            u, s, v = torch.svd(temp_feature_cov_var)
+            s = s.cpu().apply_(self.select_func).cuda()
+            temp_feature_cov_var = torch.mm(u, torch.mm(torch.diag(s), torch.t(v)))
+            this_trace = torch.trace(temp_feature_cov_var)
+            if this_trace > 3000.0:        
+                self.feature_cov_var += 0.0003 * Variable(temp_feature_cov_var / this_trace * 3000.0).cuda()
+            else:
+                self.feature_cov_var += 0.0003 * Variable(temp_feature_cov_var).cuda()
+            '''
         self.iter_num += 1
         if self.iter_num % self.print_interval == 0:
+            self.train_total_loss = self.train_cross_loss + self.train_multi_task_loss
             print("Iter {:05d}, Average Cross Entropy Loss: {:.4f}; Average MultiTask Loss: {:.4f}; Average Training Loss: {:.4f}".format(self.iter_num, self.train_cross_loss / float(self.print_interval), self.train_multi_task_loss / float(self.print_interval), self.train_total_loss / float(self.print_interval)))
+            self.file_out.write("Iter {:05d}, Average Cross Entropy Loss: {:.4f}; Average MultiTask Loss: {:.4f}; Average Training Loss: {:.4f}\n".format(self.iter_num, self.train_cross_loss / float(self.print_interval), self.train_multi_task_loss / float(self.print_interval), self.train_total_loss / float(self.print_interval)))
+            self.file_out.flush()
             self.train_cross_loss = 0
             self.train_multi_task_loss = 0
             self.train_total_loss = 0
 
        
     def test_model(self, input_, i):
+        self.shared_layers.train(False)
         self.networks[i].train(False)
-        output = self.networks[i](input_)
+        output = self.networks[i](self.shared_layers(input_))
         return output 
