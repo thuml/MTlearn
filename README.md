@@ -20,6 +20,8 @@ We use [Office-Home](http://hemanthdv.org/OfficeHome-Dataset/) dataset which com
 ## Training
 Use the following command to run the training code.
 ```
+cd src 
+
 dataset_name = Office or Office-Home
 python train_multi_task.py gpu_id dataset_name
 ```
