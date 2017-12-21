@@ -28,6 +28,12 @@ python train_multi_task.py gpu_id dataset_name
 
 Whether to finetune the pre-trained CNN layers depends on the size of your training dataset. In our experiment, since 5%, 10%, 20% of Office-Caltech dataset and 5% of Office-Home dataset has too few data, we do not finetune the CNN layers to get rid of overfitting. For 10% and 20% of Office-Home dataset, we finetune the whole network. You can use the base CNN model to test whether your dataset need finetuning or not.
 
+Change "lr" in code 
+```
+parameter_dict = [{"params":self.shared_layers.module.parameters(), "lr":0}]
+```
+in the 'model_multi_task.py' file to control whether to finetune the base CNN layers. 0 is not finetuning.
+
 ## Evaluation
 The evaluation results are showed in the training log and are also printed in the training process.
 
